@@ -4,6 +4,7 @@ from torch import nn, Tensor
 from torchvision import transforms
 from torchvision.transforms import functional
 import os
+import copy
 import logging
 import folder_paths
 import comfy.utils
@@ -273,7 +274,7 @@ class ApplyPulidFlux:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "model": ("MODEL", ),
+                "old_model": ("MODEL", ),
                 "pulid_flux": ("PULIDFLUX", ),
                 "eva_clip": ("EVA_CLIP", ),
                 "face_analysis": ("FACEANALYSIS", ),
@@ -299,11 +300,13 @@ class ApplyPulidFlux:
     def __init__(self):
         self.pulid_data_dict = None
 
-    def apply_pulid_flux(self, model, pulid_flux, eva_clip, face_analysis, image, weight, start_at, end_at, attn_mask=None, unique_id=None, source_face_selection="center_face"):
+    def apply_pulid_flux(self, old_model, pulid_flux, eva_clip, face_analysis, image, weight, start_at, end_at, attn_mask=None, unique_id=None, source_face_selection="center_face"):
         device = comfy.model_management.get_torch_device()
         # Why should I care what args say, when the unet model has a different dtype?!
         # Am I missing something?!
         #dtype = comfy.model_management.unet_dtype()
+        # 创建一个新的模型对象，不改变输入的 model
+        model = copy.deepcopy(old_model)
         dtype = model.model.diffusion_model.dtype
         # Because of 8bit models we must check what cast type does the unet uses
         # ZLUDA (Intel, AMD) & GPUs with compute capability < 8.0 don't support bfloat16 etc.
